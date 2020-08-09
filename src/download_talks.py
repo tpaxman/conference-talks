@@ -19,16 +19,40 @@
 import time
 import requests
 from selenium import webdriver
+import argparse
 
-browser = webdriver.Chrome()
+START = 1
+END = 8459
 
-for talknum in range(1, 20):
+def main():
+    parser = argparse.ArgumentParser(description='Get talk number to read')
+    parser.add_argument('start_talknum', type=int, help='the number of the talk to start with')
+    parser.add_argument('--upto', type=int, default=None, help='the number of the talk to end with')
+    args = parser.parse_args()
+
+    browser = webdriver.Chrome()
+
+    start = args.start_talknum
+    end = args.upto
+
+    if not end:
+        end = start
+
+    for talknum in range(start, end + 1):
+        download_talk(browser, talknum)
+
+
+def download_talk(browser, talknum):
     hexnum = hex(talknum)[2:]
     url = f'https://scriptures.byu.edu/#:t{hexnum}>'
     browser.get(url)
+    time.sleep(5)
     html = browser.page_source
     filename = f'data/talk_{talknum}.html'
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(html)
     print(f'downloaded {filename}')
-    time.sleep(5)
+
+
+if __name__=='__main__':
+    main()
