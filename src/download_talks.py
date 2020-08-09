@@ -18,13 +18,17 @@
 """
 import time
 import requests
+from selenium import webdriver
 
-for talknum in range(1, 4):
+browser = webdriver.Chrome()
+
+for talknum in range(1, 20):
     hexnum = hex(talknum)[2:]
     url = f'https://scriptures.byu.edu/#:t{hexnum}>'
-    r = requests.get(url)
-    filename = f'data/{hexnum}.html'
+    browser.get(url)
+    html = browser.page_source
+    filename = f'data/talk_{talknum}.html'
     with open(filename, 'w', encoding='utf-8') as f:
-        f.write(r.text)
+        f.write(html)
     print(f'downloaded {filename}')
     time.sleep(5)
