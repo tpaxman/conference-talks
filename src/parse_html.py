@@ -9,26 +9,21 @@ def getit(talknum):
     soup = BeautifulSoup(html)
 
     talklabel = soup.find('div', id='talklabel')
-    date_tuple = re.findall(r'(\d+)–(\w):.*', talklabel.text)[0]
-    year = int(date_tuple[0])
-    month = date_tuple[1]
+    details = re.findall(r'(\d+)–(\w):\d+,\s+(.*),\s+(.*)$', talklabel.text)[0]
+    year = int(details[0])
+    month = details[1]
+    speaker = details[2]
+    title = details[3]
 
     talktext = soup.find('div', id='centercolumn')
 
     if talknum < 2000:
-
-        get_gc_string = lambda x: talktext.find(class_=x).text.strip()
-        title = get_gc_string('gctitle')
-        speaker = get_gc_string('gcspeaker')
-        calling = get_gc_string('gcspkpos')
+        calling = talktext.find(class_='gcspkpos').text.strip()
         bodyhtml = talktext.find(class_='gcbody')
         citations = [x.text.strip() for x in bodyhtml.find_all(class_='citation')]
     else:
-        title = talktext.find('h1').text.strip()
-
         byline = [x.text for x in talktext.find(class_='byline').find_all('p')]
-        calling = byline[0]
-        speaker = byline[1]
+        calling = byline[1]
         bodyhtml = talktext.find(id='primary')
         citations = [x.text.strip() for x in bodyhtml.find_all(class_='citation')]
 
