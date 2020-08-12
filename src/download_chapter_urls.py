@@ -8,77 +8,51 @@ from selenium.webdriver.support import expected_conditions as EC
 import re
 import pandas as pd
 
-books_url = 'https://scriptures.byu.edu/#::fNYNY7267e401'
+volumes_url = 'https://scriptures.byu.edu/#::fNYNY7267e401'
 browser = webdriver.Chrome()
 browser.implicitly_wait(5)
-#browser.get(books_url)
 
-df = pd.read_csv('output/book_urls.csv')
-chaps_urls = []
+df_books = pd.read_csv('output/book_urls.csv')
+chaps_data = []
 
-
-for b in df.book_url:
+for b in df_books.book_url:
     # browse_to(browser, b)
     browser.get(b)
-    time.sleep(5)
+    time.sleep(1)
     # browse_to(browser, b)
-    soup = BeautifulSoup(browser.page_source)
-    chapblock = soup.find(class_='chaptersblock')
-    chaps = chapblock.find_all('a')
-    print(len(chaps), b)
-    chaps_urls.append(chaps)
-    # for c in chaps.find_all('a'):
-    #     book_num, chap_num = re.findall(r'.*Filter\(\'(\d+)\', \'(\d+).*', c.attrs['onclick'])[0]
-    #     chaps_urls.append((book_num, chap_num))
-
-
-
-def browse_to(browser, url):
     try:
-        browser.get(url)
         browser.find_element_by_class_name('chaptersblock')
+        soup = BeautifulSoup(browser.page_source)
+        chapblock = soup.find(class_='chaptersblock')
+        chaps = chapblock.find_all('a')
+        # print(len(chaps), b)
+        for c in chaps:
+            book_num, chap_num = re.findall(r'.*Filter\(\'(\d+)\', \'(\d+).*', c.attrs['onclick'])[0]
+            chaps_data.append((int(book_num), int(chap_num)))
+            print(book_num, chap_num)
     except:
-        browse_to(browser, url)
+        # some books don't have chapters (goes directly to the verses list) like Jarom, Omni, etc.
+        # flagged here by assigning None to chap_num
+        book_num = df_books.set_index('book_url').loc[b, 'book_num']
+        chap_num = 1
+        chaps_data.append((book_num, chap_num))
+        print(book_num, chap_num)
 
-# voltitles = BeautifulSoup(browser.page_source).find_all(class_='volumetitle')
-# volsoup = BeautifulSoup(browser.page_source).find_all(class_='volumecontents')
-# volumes = dict(zip([x.text.strip() for x in voltitles], volsoup))
-#
-# volumes_data = []
-# for vol_name, vol_tag in volumes.items():
-#     book_tags_list = vol_tag.find_all('a')
-#     for book_tag in book_tags_list:
-#         book_num = int(re.sub(r'.*book=(\d+).*', r'\1', book_tag.get_attribute_list('onclick')[0]))
-#         book_name = book_tag.text
-#         volumes_data.append((vol_name, book_name, book_num))
-#
-# df = pd.DataFrame(volumes_data, columns=('volume', 'book_name', 'book_num'))
-#
-# def get_book_url(book_num):
-#     hexnum = hex(book_num)[2:].zfill(3)
-#     return f'{books_url}{hexnum}'
-#
-# df['book_url'] = df.book_num.apply(get_book_url)
-#
-#
-# df.to_csv('output/book_urls.csv', index=False)
+df_chaps = pd.DataFrame(chaps_data, columns=['book_num', 'chap_num'])
+df_chapcounts = df_chaps.groupby('book_num').count().reset_index().rename(columns={'chap_num': 'chap_count'})
+df_chaps = df_chaps.merge(df_chapcounts, on='book_num')
+df_chaps['chap_category'] = df_chaps.chap_count.apply(lambda x: 'single' if x == 1 else 'multiple')
+df_chaps = df_chaps.merge(df_books, on='book_num')
 
 
-#
-# browser.get(df.book_url[0])
-# time.sleep(5)
-# browser.get(df.book_url[0])
-# html_source = browser.page_source
-# chaps = BeautifulSoup(html_source).find(class_='chaptersblock')
-#
-#
-# try:
-#     element = WebDriverWait(browser, 20).until(
-#         EC.presence_of_element_located((By.CLASS_NAME, 'chaptersblock'))
-#     )
-# finally:
-#     html_source = browser.page_source
-#
-#
-# chaps = BeautifulSoup(browser.page_source).find(class_='chaptersblock')
-# re.findall(r'.*Filter\(\'(\d+)\', \'(\d+).*', chaps.find_all('a')[0].attrs['onclick'])[0]
+def get_chap_url(book_url, chap_num, chap_category):
+    if chap_category == 'multiple':
+        hexnum = hex(chap_num)[2:].zfill(2)
+        return f'{book_url}{hexnum}'
+    elif chap_category == 'single':
+        return f'{book_url}'
+
+df_chaps['chap_url'] = df_chaps.apply(lambda r: get_chap_url(r.book_url, r.chap_num, r.chap_category), axis=1)
+
+
+df_chaps.to_csv('output/chapter_urls.csv', index=False)

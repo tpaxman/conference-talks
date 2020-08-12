@@ -9,9 +9,9 @@ import re
 import pandas as pd
 
 browser = webdriver.Chrome()
-books_url = 'https://scriptures.byu.edu/#::fNYNY7267e401'
+volumes_url = 'https://scriptures.byu.edu/#::fNYNY7267e401'
 browser.implicitly_wait(20)
-browser.get(books_url)
+browser.get(volumes_url)
 voltitles = BeautifulSoup(browser.page_source).find_all(class_='volumetitle')
 volsoup = BeautifulSoup(browser.page_source).find_all(class_='volumecontents')
 volumes = dict(zip([x.text.strip() for x in voltitles], volsoup))
@@ -28,7 +28,7 @@ df = pd.DataFrame(volumes_data, columns=('volume', 'book_name', 'book_num'))
 
 def get_book_url(book_num):
     hexnum = hex(book_num)[2:].zfill(3)
-    return f'{books_url}{hexnum}'
+    return f'{volumes_url}{hexnum}'
 
 df['book_url'] = df.book_num.apply(get_book_url)
 
