@@ -1,44 +1,64 @@
 from bs4 import BeautifulSoup
-import requests
 import re
+import json
 
-def getit(talknum):
+def main():
+    for x in range(1, 8460):
+        if x not in range(1825, 2000):
+            citation_data = get_citation_data(x)
+            save_citation_data(citation_data)
+            print(f'saved {x}')
+
+def get_citation_data(talknum):
+    # read html file
+    soup = import_html_file(talknum)
+
+    # get talk details
+    labeltxt = soup.find('div', id='talklabel').text
+    year, month, speaker, title = re.findall(r'(\d+)–(\w):\d+,\s+(.*),\s+(.*)$', labeltxt)[0]
+
+    # get citations from body
+    talktext = soup.find('div', id='centercolumn')
+    if talknum < 2000:
+        bodyhtml = talktext.find(class_='gcbody')
+    elif 2000 <= talknum < 8362:
+        bodyhtml = talktext.find(id='primary')
+    elif talknum >= 8362:
+        bodyhtml = talktext.find(class_='body-block')
+    footnotes_html = [str(x) for x in bodyhtml.find_all(class_='footnote')]
+    # citations = [unicodedata.normalize('NFKD', x.text.strip())
+    #              for x in bodyhtml.find_all(class_='citation')]
+
+    return {'talknum': talknum,
+            'year': int(year),
+            'month': month,
+            'speaker': speaker,
+            'title': title,
+            'footnotes_html': footnotes_html}
+
+def import_html_file(talknum):
     filename = f'data/talk_{talknum}.html'
     with open(filename, 'r', encoding='utf-8') as f:
         html = f.read()
-    soup = BeautifulSoup(html)
-
-    talklabel = soup.find('div', id='talklabel')
-    details = re.findall(r'(\d+)–(\w):\d+,\s+(.*),\s+(.*)$', talklabel.text)[0]
-    year = int(details[0])
-    month = details[1]
-    speaker = details[2]
-    title = details[3]
-
-    talktext = soup.find('div', id='centercolumn')
-
-    if talknum < 2000:
-        calling = talktext.find(class_='gcspkpos').text.strip()
-        bodyhtml = talktext.find(class_='gcbody')
-        citations = [x.text.strip() for x in bodyhtml.find_all(class_='citation')]
-    else:
-        byline = [x.text for x in talktext.find(class_='byline').find_all('p')]
-        calling = byline[1]
-        bodyhtml = talktext.find(id='primary')
-        citations = [x.text.strip() for x in bodyhtml.find_all(class_='citation')]
-
-    print('\n'.join([title, speaker, calling, str(year), month, '\n'.join(citations)]))
+    soup = BeautifulSoup(html, features='html.parser')
+    return soup
 
 
-def checksave(hexnum):
-    a = requests.get(f'https://scriptures.byu.edu/#:t{hexnum}')
-    with open(f'data/test_{hexnum}.html', 'w', encoding='utf-8') as f:
-        f.write(a.text)
+def save_citation_data(citation_data):
+    talknum = citation_data['talknum']
+    with open(f'data/talk_{talknum}.json', 'w', encoding='utf-8') as f:
+        json.dump(citation_data, f)
 
 
 
-for x in range(1,20):
-    getit(x)
+
+if __name__=='__main__':
+    main()
+
+# def checksave(hexnum):
+#     a = requests.get(f'https://scriptures.byu.edu/#:t{hexnum}')
+#     with open(f'data/test_{hexnum}.html', 'w', encoding='utf-8') as f:
+#         f.write(a.text)
 
 
 # from bs4 import BeautifulSoup
