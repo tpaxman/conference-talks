@@ -22,9 +22,9 @@ def get_verse_url(book_num, chapter_num, verse_num):
 def get_book_nums(browser):
     browser.implicitly_wait(20)
     browser.get(ROOT_URL)
-    browser.find_element_by_id('citationindex2')
+    browser.find_element_by_id('citationindex')
     soup = BeautifulSoup(browser.page_source)
-    citations = soup.find(id='citationindex2')
+    citations = soup.find(id='citationindex')
     voltitles = citations.find_all(class_='volumetitle')
     volsoup = citations.find_all(class_='volumecontents')
     volumes = dict(zip([x.text.strip() for x in voltitles], volsoup))
@@ -52,7 +52,7 @@ def get_chapter_nums(browser, book_num):
         soup = BeautifulSoup(browser.page_source)
         chapblock = soup.find(class_='chaptersblock')
         chaps = chapblock.find_all('a')
-        print(len(chaps), book_url)
+        # print(len(chaps), book_url)
         for c in chaps:
             chapter_num_string = c.attrs['onclick']
             chapter_num = int(re.sub(r'.*Filter\(\'\d+\', \'(\d+).*', r'\1', chapter_num_string))
@@ -86,15 +86,23 @@ def get_verse_nums(browser, book_num, chapter_num):
     return unique_verses
 
 
+import pickle
 browser = webdriver.Chrome()
 
-data = []
-for b in get_book_nums(browser):
+
+booknums = get_book_nums(browser)
+for b in booknums:
     data = []
-    for c in get_chapter_nums(browser, b):
+    chapnums = get_chapter_nums(browser, b)
+    for c in chapnums:
+        print(b, c)
         vlist = get_verse_nums(browser, b, c)
         data.append((b, c, vlist))
-        print(b, c)
+    df = pd.DataFrame(data, columns=['book', 'chapter', 'verse']).explode('verse')
+    df.to_csv(f'data2/{b}.csv')
+
+
+
 
 pd.DataFrame(data).to_csv(f'output/all_verses.csv', index=False)
 
