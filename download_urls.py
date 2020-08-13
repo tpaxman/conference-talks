@@ -22,9 +22,9 @@ def get_verse_url(book_num, chapter_num, verse_num):
 def get_book_nums(browser):
     browser.implicitly_wait(20)
     browser.get(ROOT_URL)
-    browser.find_element_by_id('scriptures2')
+    browser.find_element_by_id('citationindex2')
     soup = BeautifulSoup(browser.page_source)
-    citations = soup.find(id='scriptures2')
+    citations = soup.find(id='citationindex2')
     voltitles = citations.find_all(class_='volumetitle')
     volsoup = citations.find_all(class_='volumecontents')
     volumes = dict(zip([x.text.strip() for x in voltitles], volsoup))
@@ -34,9 +34,9 @@ def get_book_nums(browser):
         for book_tag in book_tags_list:
             book_num_string = book_tag.attrs['onclick']
             # print(book_num_string)
-            # book_num = int(re.sub(r'.*Filter\(\'(\d+)\'.*', r'\1', book_num_string))
-            book_num = int(re.sub(r'.*book=(\d+).*', r'\1', book_num_string))
-            book_name = book_tag.text
+            book_num = int(re.sub(r'.*Filter\(\'(\d+)\'.*', r'\1', book_num_string))
+            # book_num = int(re.sub(r'.*book=(\d+).*', r'\1', book_num_string))
+            book_name = book_tag.find(class_='book').text
             volumes_nums[book_num] = book_name
     return volumes_nums
 
