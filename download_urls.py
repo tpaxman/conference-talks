@@ -23,7 +23,6 @@ def get_book_nums(browser):
     browser.implicitly_wait(20)
     browser.get(ROOT_URL)
     browser.find_element_by_id('scriptures2')
-    # time.sleep(5)
     soup = BeautifulSoup(browser.page_source)
     citations = soup.find(id='scriptures2')
     voltitles = citations.find_all(class_='volumetitle')
@@ -45,7 +44,8 @@ def get_chapter_nums(browser, book_num):
     book_url = get_book_url(book_num)
     browser.implicitly_wait(5)
     browser.get(book_url)
-    time.sleep(1)
+    browser.refresh()
+    # time.sleep(1)
     chaps_data = []
     try:
         browser.find_element_by_class_name('chaptersblock')
@@ -68,27 +68,35 @@ def get_chapter_nums(browser, book_num):
 def get_verse_nums(browser, book_num, chapter_num):
     chapter_url = get_chapter_url(book_num, chapter_num)
     browser.implicitly_wait(30)
-
     browser.get(chapter_url)
     browser.refresh()
-    # time.sleep(4)
     verses_data = []
-    browser.find_element_by_id('citationindex2')
-    # browser.find_element_by_class_name('referencesblock')
     browser.find_element_by_class_name('citationcount')
     soup = BeautifulSoup(browser.page_source)
     verseblock = soup.find(id='citationindex2').find(class_='referencesblock')
     verses = verseblock.find_all('a')
     for v in verses:
-        verse_num_string = v.attrs['onclick']
-        print(verse_num_string)
-        verse_num = int(re.sub(r'getFilter.*\'\d+\',.*\'\d+\',.*\'(\d+)\'.*', r'\1', verse_num_string))
-        print(verse_num)
-        verses_data.append(verse_num)
-
+        onclick_string = v.attrs['onclick']
+        verse_str = re.sub(r'getFilter.*\'\d+\',.*\'\d+\',.*\'(\d+)\'.*', r'\1', onclick_string)
+        if verse_str != onclick_string:
+            # skips over weird cases like in Malachi where the last 'verse' number is 'N'
+            verse_num = int(verse_str)
+            verses_data.append(verse_num)
     unique_verses = list(set(verses_data))
     return unique_verses
 
+
+browser = webdriver.Chrome()
+
+data = []
+for b in get_book_nums(browser):
+    data = []
+    for c in get_chapter_nums(browser, b):
+        vlist = get_verse_nums(browser, b, c)
+        data.append((b, c, vlist))
+        print(b, c)
+
+pd.DataFrame(data).to_csv(f'output/all_verses.csv', index=False)
 
 
 
@@ -96,4 +104,4 @@ def get_verse_nums(browser, book_num, chapter_num):
 # browser = webdriver.Chrome()
 # get_book_nums(browser)
 # get_chapter_nums(browser, 110)
-get_verse_nums(browser, 101, 5)
+# get_verse_nums(browser, 101, 5)
