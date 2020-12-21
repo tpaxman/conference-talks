@@ -1,56 +1,77 @@
-import time
-from selenium import webdriver
+"""
+Download Book URLs
+
+- Creates a table of all scripture index urls for each book of scripture.
+- Output is a CSV of 94 books of scripture with columns 'volume, book_name, book_num, book_url'
+- Algorithm description:
+  - Navigates to 'https://scriptures.byu.edu/#::fNYNY7267e401'
+  - Locates the source html associated with the "Scriptures" pane on the left
+  - Gets the 5 volume names (Old Testament, New Testament, etc.)
+  - Gets the names of each book and their IDs
+  - Uses the ID values to define the URL for each book
+"""
+
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 import re
 import pandas as pd
+import sys
 
-browser = webdriver.Chrome()
-volumes_url = 'https://scriptures.byu.edu/#::fNYNY7267e401'
-browser.implicitly_wait(20)
-browser.get(volumes_url)
-voltitles = BeautifulSoup(browser.page_source).find_all(class_='volumetitle')
-volsoup = BeautifulSoup(browser.page_source).find_all(class_='volumecontents')
-volumes = dict(zip([x.text.strip() for x in voltitles], volsoup))
+VOLUMES_URL = 'https://scriptures.byu.edu/#::fNYNY7267e401'
 
-volumes_data = []
-for vol_name, vol_tag in volumes.items():
-    book_tags_list = vol_tag.find_all('a')
-    for book_tag in book_tags_list:
-        book_num = int(re.sub(r'.*book=(\d+).*', r'\1', book_tag.get_attribute_list('onclick')[0]))
-        book_name = book_tag.text
-        volumes_data.append((vol_name, book_name, book_num))
 
-df = pd.DataFrame(volumes_data, columns=('volume', 'book_name', 'book_num'))
+def main():
+
+    im
+
+    # open Chrome webdriver (the latest driver for Chrome 87 is sitting in the project folder)
+    browser = webdriver.Chrome()
+
+    # wait for stuff to load
+    browser.implicitly_wait(20)
+
+    # Locate the scripture pane on the left side of the page
+    browser.get(VOLUMES_URL)
+    page_source = browser.page_source
+    soup = BeautifulSoup(page_source)
+    scripture_pane = soup.find_all(class_='scripturewrapper')[0]
+
+    # Get the titles of each of the 5 volumes
+    volnames = [x.text.strip() for x in scripture_pane.find_all(class_='volumetitle')]
+    # Get the Book titles and their corresponding links for each of the 5 volumes
+    books_tags = [x.find_all('a') for x in scripture_pane.find_all(class_='volumecontents')]
+
+    # combine the volume names with the books they contain and make into a table
+    book_ids = [{y.text: get_book_id(y) for y in x} for x in books_tags]
+    df = pd.DataFrame([(vol, book, booknum)
+                       for vol, booksdict in zip(volnames, book_ids)
+                       for book, booknum in booksdict.items()],
+                      columns=['volume', 'book_name', 'book_num'])
+    df['book_url'] = [get_book_url(x) for x in df['book_num']]
+
+    # df.to_csv('output/book_urls.csv', index=False)
+
+
+def get_book_id(souptag):
+    """
+    This gets the id number of a scripture book from a link tag (i.e. <a href...> soup tag)
+    Each of the book tag links looks like this:
+    <a href="javascript:void(0);" onclick="getScripture('?book=405&amp;chapter=&amp;verses=&amp;jst=')">JS—History</a>,
+    """
+    onclick_contents = souptag.get_attribute_list('onclick')[0]
+    book_num_string = re.sub(r'.*book=(\d+).*', r'\1', onclick_contents)
+    book_num = int(book_num_string)
+    return book_num
+
 
 def get_book_url(book_num):
+    """
+    Converts the book number to a url
+    """
     hexnum = hex(book_num)[2:].zfill(3)
-    return f'{volumes_url}{hexnum}'
-
-df['book_url'] = df.book_num.apply(get_book_url)
-
-
-df.to_csv('output/book_urls.csv', index=False)
+    book_url = f'{VOLUMES_URL}{hexnum}'
+    return book_url
 
 
-#
-# browser.get(df.book_url[0])
-# time.sleep(5)
-# browser.get(df.book_url[0])
-# html_source = browser.page_source
-# chaps = BeautifulSoup(html_source).find(class_='chaptersblock')
-#
-#
-# try:
-#     element = WebDriverWait(browser, 20).until(
-#         EC.presence_of_element_located((By.CLASS_NAME, 'chaptersblock'))
-#     )
-# finally:
-#     html_source = browser.page_source
-#
-#
-# chaps = BeautifulSoup(browser.page_source).find(class_='chaptersblock')
-# re.findall(r'.*Filter\(\'(\d+)\', \'(\d+).*', chaps.find_all('a')[0].attrs['onclick'])[0]
+if __name__ == '__main__':
+    main()
