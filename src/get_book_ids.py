@@ -8,7 +8,6 @@ Download Book URLs
   - Locates the source html associated with the "Scriptures" pane on the left
   - Gets the 5 volume names (Old Testament, New Testament, etc.)
   - Gets the names of each book and their IDs
-  - Uses the ID values to define the URL for each book
 """
 
 from bs4 import BeautifulSoup
@@ -33,7 +32,7 @@ def main():
     # Locate the scripture pane on the left side of the page
     browser.get(VOLUMES_URL)
     page_source = browser.page_source
-    soup = BeautifulSoup(page_source)
+    soup = BeautifulSoup(page_source, features="lxml")
     scripture_pane = soup.find_all(class_='scripturewrapper')[0]
 
     # Get the titles of each of the 5 volumes
@@ -46,8 +45,7 @@ def main():
     df = pd.DataFrame([(vol, book, booknum)
                        for vol, booksdict in zip(volnames, book_ids)
                        for book, booknum in booksdict.items()],
-                      columns=['volume', 'book_name', 'book_num'])
-    df['book_url'] = [get_book_url(x) for x in df['book_num']]
+                      columns=['volume', 'book_name', 'book_id'])
     df.to_csv(output_file, index=False)
 
 
@@ -61,15 +59,6 @@ def get_book_id(souptag):
     book_num_string = re.sub(r'.*book=(\d+).*', r'\1', onclick_contents)
     book_num = int(book_num_string)
     return book_num
-
-
-def get_book_url(book_num):
-    """
-    Converts the book number to a url
-    """
-    hexnum = hex(book_num)[2:].zfill(3)
-    book_url = f'{VOLUMES_URL}{hexnum}'
-    return book_url
 
 
 if __name__ == '__main__':
