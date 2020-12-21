@@ -21,13 +21,13 @@ VOLUMES_URL = 'https://scriptures.byu.edu/#::fNYNY7267e401'
 
 
 def main():
-
-    im
+    # get output filename from command line
+    output_file = sys.argv[1]
 
     # open Chrome webdriver (the latest driver for Chrome 87 is sitting in the project folder)
     browser = webdriver.Chrome()
 
-    # wait for stuff to load
+    # configure browser to wait for stuff to load
     browser.implicitly_wait(20)
 
     # Locate the scripture pane on the left side of the page
@@ -41,15 +41,14 @@ def main():
     # Get the Book titles and their corresponding links for each of the 5 volumes
     books_tags = [x.find_all('a') for x in scripture_pane.find_all(class_='volumecontents')]
 
-    # combine the volume names with the books they contain and make into a table
+    # save the volume names with the books they contain as a table
     book_ids = [{y.text: get_book_id(y) for y in x} for x in books_tags]
     df = pd.DataFrame([(vol, book, booknum)
                        for vol, booksdict in zip(volnames, book_ids)
                        for book, booknum in booksdict.items()],
                       columns=['volume', 'book_name', 'book_num'])
     df['book_url'] = [get_book_url(x) for x in df['book_num']]
-
-    # df.to_csv('output/book_urls.csv', index=False)
+    df.to_csv(output_file, index=False)
 
 
 def get_book_id(souptag):
