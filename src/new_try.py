@@ -7,7 +7,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-
 VOLUMES_URL = 'https://scriptures.byu.edu/#::fNYNY7267e401'
 
 
@@ -35,6 +34,7 @@ browser = webdriver.Chrome()
 browser.implicitly_wait(20)
 browser.get(VOLUMES_URL)
 
+
 def get_citationindex(browser):
     """
     Gets the name of the citationindex element that contains the links of interest.
@@ -42,24 +42,25 @@ def get_citationindex(browser):
     The links will be in either 'citationindex' or 'citationindex2' but it is not clear which will be the correct one
     This script waits until they both load and finds the one that has the links in it and returns the name of the ID.
     """
-
     CITATION_ID_NAMES = ['citationindex', 'citationindex2']
 
     # Gets the HTML associated with both citation index elements and attempts to find links inside
-    def get_links_list(browser):
+    def get_soup_list(browser):
         citation_id_elems = [browser.find_element_by_id(x).get_attribute('innerHTML') for x in CITATION_ID_NAMES]
         citation_id_soups = [BeautifulSoup(x, features="lxml") for x in citation_id_elems]
-        links_list = [name for name, soup in zip(CITATION_ID_NAMES, citation_id_soups) if soup.find_all('a')]
-        return links_list
+        soup_list = [soup for soup in citation_id_soups if soup.find_all('a')]
+        return soup_list
 
     # This runs until the page has actually loaded and the links are found inside the proper citationindex element
-    links_list = []
-    while not links_list:
-        links_list = get_links_list(browser)
+    soup_list = []
+    while not soup_list:
+        soup_list = get_soup_list(browser)
 
-    # the name of the citation index element is returned (i.e. 'citationindex' or 'citationindex2')
-    citationindex = links_list[0]
-    return citationindex
+    # the BeautifulSoup object of the citation index element is returned (i.e. for 'citationindex' or 'citationindex2')
+    citationindex_soup = soup_list[0]
+    return citationindex_soup
+
+def get_all_getfilter_links(browser):
 
 
 # def get_links(javascript_command):
@@ -68,14 +69,14 @@ def get_citationindex(browser):
 #     for x in citation_data.find_all('a'):
 #         print(x.getText())
 
-    # # to get the linke
-    # a = [x for x in BeautifulSoup(browser.page_source).find(id='citationindex2').find_all('a') if
-    #      ('getFilter' in x.get('onclick')) and (not x.find('span'))]
-    #
-    # # to get the refcounters on the last step
-    # a = [x for x in BeautifulSoup(browser.page_source).find(id='citationindex2').find_all(class_='refcounter')]
-    #
-    # refcounters = [x for x in citation_data.find_all(class_='refcounter') if x.has_attr('onclick')]
+# # to get the linke
+# a = [x for x in BeautifulSoup(browser.page_source).find(id='citationindex2').find_all('a') if
+#      ('getFilter' in x.get('onclick')) and (not x.find('span'))]
+#
+# # to get the refcounters on the last step
+# a = [x for x in BeautifulSoup(browser.page_source).find(id='citationindex2').find_all(class_='refcounter')]
+#
+# refcounters = [x for x in citation_data.find_all(class_='refcounter') if x.has_attr('onclick')]
 
 
 # Locate the scripture pane on the left side of the page
