@@ -30,19 +30,37 @@ def get_verse_url(book_num, chapter_num, verse_num):
 
 
 # open Chrome to the start page (the latest driver for Chrome 87 is sitting in the project folder)
-CITATION_ID_NAMES = ['citationindex', 'citationindex2']
+
 browser = webdriver.Chrome()
 browser.implicitly_wait(20)
 browser.get(VOLUMES_URL)
-browser.refresh()
-citation_id_elems = [browser.find_element_by_id(x).get_attribute('innerHTML') for x in CITATION_ID_NAMES]
-citation_id_soups = [BeautifulSoup(x, features="lxml") for x in citation_id_elems]
-links_list = [x for x in citation_id_soups if x.find_all('a')]
-while not links_list:
-    print('trying')
-    citation_id_elems = [browser.find_element_by_id(x).get_attribute('innerHTML') for x in CITATION_ID_NAMES]
-    citation_id_soups = [BeautifulSoup(x, features="lxml") for x in citation_id_elems]
-    links_list = [x for x in citation_id_soups if x.find_all('a')]
+
+def get_citationindex(browser):
+    """
+    Gets the name of the citationindex element that contains the links of interest.
+
+    The links will be in either 'citationindex' or 'citationindex2' but it is not clear which will be the correct one
+    This script waits until they both load and finds the one that has the links in it and returns the name of the ID.
+    """
+
+    CITATION_ID_NAMES = ['citationindex', 'citationindex2']
+
+    # Gets the HTML associated with both citation index elements and attempts to find links inside
+    def get_links_list(browser):
+        citation_id_elems = [browser.find_element_by_id(x).get_attribute('innerHTML') for x in CITATION_ID_NAMES]
+        citation_id_soups = [BeautifulSoup(x, features="lxml") for x in citation_id_elems]
+        links_list = [name for name, soup in zip(CITATION_ID_NAMES, citation_id_soups) if soup.find_all('a')]
+        return links_list
+
+    # This runs until the page has actually loaded and the links are found inside the proper citationindex element
+    links_list = []
+    while not links_list:
+        links_list = get_links_list(browser)
+
+    # the name of the citation index element is returned (i.e. 'citationindex' or 'citationindex2')
+    citationindex = links_list[0]
+    return citationindex
+
 
 # def get_links(javascript_command):
 #
