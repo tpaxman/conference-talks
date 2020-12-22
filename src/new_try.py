@@ -1,52 +1,21 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
-import re
-import pandas as pd
-import sys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import time
 
 VOLUMES_URL = 'https://scriptures.byu.edu/#::fNYNY7267e401'
-
-
-def get_book_url(book_num):
-    book_hexnum = hex(book_num)[2:].zfill(3)
-    return VOLUMES_URL + book_hexnum
-
-
-def get_chapter_url(book_num, chapter_num):
-    book_url = get_book_url(book_num)
-    chapter_hexnum = hex(chapter_num)[2:].zfill(2)
-    chapter_url = book_url + chapter_hexnum
-    return chapter_url
-
-
-def get_verse_url(book_num, chapter_num, verse_num):
-    chapter_url = get_chapter_url(book_num, chapter_num)
-    verse_url = chapter_url + str(verse_num)
-    return verse_url
-
-
-# open Chrome to the start page (the latest driver for Chrome 87 is sitting in the project folder)
-
-browser = webdriver.Chrome()
-browser.implicitly_wait(20)
-browser.get(VOLUMES_URL)
 
 
 def get_citationindex(browser):
     """
     Gets the name of the citationindex element that contains the links of interest.
-
     The links will be in either 'citationindex' or 'citationindex2' but it is not clear which will be the correct one
-    This script waits until they both load and finds the one that has the links in it and returns the name of the ID.
+    This script waits until they both load and finds the one that has the links in it and returns a bs4 Soup object.
     """
-    CITATION_ID_NAMES = ['citationindex', 'citationindex2']
 
-    # Gets the HTML associated with both citation index elements and attempts to find links inside
     def get_soup_list(browser):
-        citation_id_elems = [browser.find_element_by_id(x).get_attribute('innerHTML') for x in CITATION_ID_NAMES]
+        """Gets the HTML associated with both citation index elements and attempts to find links inside"""
+        citation_id_names = ['citationindex', 'citationindex2']
+        citation_id_elems = [browser.find_element_by_id(x).get_attribute('innerHTML') for x in citation_id_names]
         citation_id_soups = [BeautifulSoup(x, features="lxml") for x in citation_id_elems]
         soup_list = [soup for soup in citation_id_soups if soup.find_all('a')]
         return soup_list
@@ -60,40 +29,35 @@ def get_citationindex(browser):
     citationindex_soup = soup_list[0]
     return citationindex_soup
 
-def get_all_getfilter_links(browser):
+
+def dig_into_citations(browser, script=''):
+    """
+    Searches recursively through the scriptures website until it finds all talks for each of the citations
+    """
+    soup = get_citationindex(browser)
+
+    # the button links are the only ones with 'div' tags inside
+    links = [x for x in soup.find_all('a') if x.find('div')]
+    talks = [x for x in links if "getTalk" in x.get('onclick')]
+    header = soup.find(class_='volumetitle')
+
+    if talks:
+        # if talks are found, then return the data
+        for k in talks:
+            ref = k.find(class_='reference').text
+            title = k.find(class_='talktitle').text
+            print(script, header.text, ref, title)
+    else:
+        # if no talks are found yet, keep digging down (recursive call)
+        for k in links:
+            script = k.get('onclick')
+            browser.execute_script(script)
+            time.sleep(1)
+            dig_into_citations(browser, script)
 
 
-# def get_links(javascript_command):
-#
-#     citation_data = soup.find(id=citation_id_str)
-#     for x in citation_data.find_all('a'):
-#         print(x.getText())
-
-# # to get the linke
-# a = [x for x in BeautifulSoup(browser.page_source).find(id='citationindex2').find_all('a') if
-#      ('getFilter' in x.get('onclick')) and (not x.find('span'))]
-#
-# # to get the refcounters on the last step
-# a = [x for x in BeautifulSoup(browser.page_source).find(id='citationindex2').find_all(class_='refcounter')]
-#
-# refcounters = [x for x in citation_data.find_all(class_='refcounter') if x.has_attr('onclick')]
-
-
-# Locate the scripture pane on the left side of the page
-
-# It seems to change between whether 'citationindex' or 'citationindex2' has the data
-# so this chooses the non-empty one
-
-# voltitle = citation_data.find(class_='volumetitle').getText()
-
-# this is necessary because the center column also has 'refcounter' tags that are not wanted, so we keep only
-# those with the 'onclick' attribute.
-# data = [(x.get('onclick'),  # contains IDs for the talk and the reference
-#          x.find(class_='reference').getText(),  # contains date and author
-#          x.find(class_='talktitle').getText())  # contains the title
-#         for x in citation_data.find_all(class_='refcounter') if x.has_attr('onclick')]
-
-# IDEAS:
-
-# check to make sure volume title is right
-#
+# Open Chrome to the start page (the latest driver for Chrome 87 is sitting in the project folder)
+browser = webdriver.Chrome()
+browser.implicitly_wait(20)
+#browser.get('https://scriptures.byu.edu/#::fNYNY7267e4010d6')
+dig_into_citations(browser)
