@@ -4,9 +4,8 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 import time
 
-VOLUMES_URL = 'https://scriptures.byu.edu/#::fNYNY7267e401'
-output_folder = Path('page_sources')
-
+VOLUMES_URL = 'https://scriptures.byu.edu/#::fNYNY7267e410'
+output_folder = Path('page_sources_citfreq')
 
 def get_citationindex(browser):
     """
@@ -32,38 +31,20 @@ def get_citationindex(browser):
     citationindex_soup = soup_list[0]
     return citationindex_soup
 
-
-def dig_into_citations(browser, script=''):
-    """
-    Searches recursively through the scriptures website until it finds all talks for each of the citations
-    """
-    soup = get_citationindex(browser)
-
-    # the button links are the only ones with 'div' tags inside
-    links = [x for x in soup.find_all('a') if x.find('div')]
-    talks = [x for x in links if "getTalk" in x.get('onclick')]
-    print([x.get('onclick') for x in links])
-    if talks:
-        filestem = '_'.join(y[0] if y else '0' for y in [re.findall('\d+', x) for x in script.split(',')])
-        filename = filestem + '.html'
-        filepath = output_folder / filename
-        print(f'{filepath=}')
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(str(soup))
-
-    else:
-        # if no talks are found yet, keep digging down (recursive call)
-        for k in links:
-            script = k.get('onclick')
-            browser.execute_script(script)
-            time.sleep(1)
-            dig_into_citations(browser, script)
-
-
-# Open Chrome to the start page (the latest driver for Chrome 87 is sitting in the project folder)
 browser = webdriver.Chrome()
 browser.implicitly_wait(20)
 browser.get(VOLUMES_URL)
 time.sleep(4)
-#browser.get('https://scriptures.byu.edu/#::fNYNY7267e4010d6')
-dig_into_citations(browser)
+soup = get_citationindex(browser)
+topscrips = [x for x in soup.find_all('a') if x.find('div')]
+
+for k in topscrips:
+    script = k.get('onclick')
+    browser.execute_script(script)
+    time.sleep(1)
+    soup = get_citationindex(browser)
+    filestem = '_'.join(re.findall(r"\'(.*?)\'", script))
+    filename = filestem + '.html'
+    filepath = output_folder / filename
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(str(soup))
