@@ -10,11 +10,14 @@ def main():
     browser = webdriver.Chrome()
     browser.implicitly_wait(20)
     browser.get(volumes_url)
-    time.sleep(4)
-    soup = get_citationindex_dynamic(browser)
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.write(str(soup))
+    time.sleep(5)
 
+    soup = get_citationindex_dynamic(browser)
+    scripts = [x.get('onclick') for x in soup.find_all('a') if x.find('div')]
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for x in scripts:
+            f.write(f'{x}\n')
 
 if __name__ == '__main__':
     main()
