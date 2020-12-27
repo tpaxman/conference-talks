@@ -3,13 +3,13 @@ import time
 from citationindex import get_citationindex_dynamic
 import sys
 
-output_file, volumes_url = sys.argv[1:]
+base_url, output_file = sys.argv[1:]
 
 def main():
     # Open Chrome to the start page (the latest driver for Chrome 87 is sitting in the project folder)
     browser = webdriver.Chrome()
     browser.implicitly_wait(20)
-    browser.get(volumes_url)
+    browser.get(base_url)
     time.sleep(5)
 
     soup = get_citationindex_dynamic(browser)
