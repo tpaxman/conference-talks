@@ -1,6 +1,6 @@
 from selenium import webdriver
 import time
-from citationindex import get_citationindex
+from citationindex import get_citationindex_dynamic
 import sys
 
 output_file, volumes_url = sys.argv[1:]
@@ -11,7 +11,7 @@ def main():
     browser.implicitly_wait(20)
     browser.get(volumes_url)
     time.sleep(4)
-    soup = get_citationindex(browser)
+    soup = get_citationindex_dynamic(browser)
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(str(soup))
 
