@@ -8,14 +8,6 @@ def get_citationindex(browser):
     This script waits until they both load and finds the one that has the links in it and returns a bs4 Soup object.
     """
 
-    def get_soup_list(browser):
-        """Gets the HTML associated with both citation index elements and attempts to find links inside"""
-        citation_id_names = ['citationindex', 'citationindex2']
-        citation_id_elems = [browser.find_element_by_id(x).get_attribute('innerHTML') for x in citation_id_names]
-        citation_id_soups = [BeautifulSoup(x, features="lxml") for x in citation_id_elems]
-        soup_list = [soup for soup in citation_id_soups if soup.find_all('a')]
-        return soup_list
-
     # This runs until the page has actually loaded and the links are found inside the proper citationindex element
     soup_list = []
     while not soup_list:
@@ -24,3 +16,12 @@ def get_citationindex(browser):
     # the BeautifulSoup object of the citation index element is returned (i.e. for 'citationindex' or 'citationindex2')
     citationindex_soup = soup_list[0]
     return citationindex_soup
+
+
+def get_soup_list(browser):
+    """Gets the HTML associated with both citation index elements and attempts to find links inside"""
+    citation_id_names = ['citationindex', 'citationindex2']
+    page_source = browser.page_source
+    citation_id_soups = [BeautifulSoup(page_source, features='lxml').find(id=x) for x in citation_id_names]
+    soup_list = [soup for soup in citation_id_soups if soup.find_all('a')]
+    return soup_list

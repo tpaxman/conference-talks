@@ -1,6 +1,6 @@
 from selenium import webdriver
 import time
-from src.citationindex import get_citationindex
+from citationindex import get_citationindex
 import sys
 
 output_file, volumes_url = sys.argv[1:]
