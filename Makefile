@@ -18,3 +18,7 @@ output/books-scripts.txt : src/get_books_scripts.py
 output/chapter-scripts.txt : src/get_chapters_scripts.py output/books-scripts.txt
 	python $^ https://scriptures.byu.edu/#::fNYNY7267e413 $@
 
+output/verses-scripts.txt : src/get_verses_scripts.py output/chapter-scripts.txt
+	python $^ https://scriptures.byu.edu/#::fNYNY7267e413 $@
+
+
