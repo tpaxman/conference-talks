@@ -1,5 +1,10 @@
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
+
+
 
 WebElement = webdriver.remote.webelement.WebElement
 
@@ -8,20 +13,29 @@ def main():
     base_url = 'https://scriptures.byu.edu/#::fNYNY7267e413'
     browser = webdriver.Chrome()
     browser.get(base_url)
-    browser.implicitly_wait(5)
-    root_button_elems = find_button_elems(browser)
 
+    # wait = WebDriverWait(browser, 10)
+    # element = wait.until(EC.element_to_be_clickable((By.TAG_NAME, 'a')))
+    root_button_elems = find_button_elems(browser)
     d = get_buttons_details_dict(root_button_elems)
 
-    old_button_elems = root_button_elems
+    old_url = base_url
     dd = {}
     for title, script in d.items():
         browser.execute_script(script)
+        new_url = browser.current_url
+        browser.get(new_url)
+        url_changed = check_url_changed(new_url, old_url)
+        if not url_changed:
+            print("url didn't change; sleeping for 2")
+            time.sleep(2)
         print(f'execute {script} ({title})')
-        new_button_elems = find_button_elems_wait_wrapper(browser, old_button_elems)
+        new_button_elems = find_button_elems(browser)
         d2 = get_buttons_details_dict(new_button_elems)
-        old_button_elems = new_button_elems
         dd[title] = d2
+        # loop update
+        old_url = new_url
+        # browser.get(old_url)
 
 
 def get_buttons_details_dict(button_elems : list) -> dict:
@@ -33,6 +47,9 @@ def get_buttons_details_dict(button_elems : list) -> dict:
         d[title] = script
         print("get details for", title, script)
     return d
+
+def check_url_changed(new_url, old_url):
+    return new_url != old_url
 
 
 def check_that_page_has_changed(new_button_elements, old_button_elements):
