@@ -17,23 +17,15 @@ def main():
     root_button_elems = find_button_elems(browser)
     d = get_buttons_details_dict(root_button_elems)
 
-    old_url = base_url
     dd = {}
     for title, script in d.items():
         browser.execute_script(script)
         new_url = browser.current_url
         browser.get(new_url)
-        url_changed = check_url_changed(new_url, old_url)
-        if not url_changed:
-            print("url didn't change; sleeping for 2")
-            time.sleep(2)
         print(f'execute {script} ({title})')
         new_button_elems = find_button_elems(browser)
         d2 = get_buttons_details_dict(new_button_elems)
         dd[title] = d2
-        # loop update
-        old_url = new_url
-        # browser.get(old_url)
 
 
 def get_buttons_details_dict(button_elems: list) -> dict:
