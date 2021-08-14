@@ -1,3 +1,65 @@
+## 2021-08-14:
+
+Inspecting the "Book element" on this page: https://scriptures.byu.edu/#::fNYNY7267e413
+This is the book of Genesis button's details:
+XPATH:      //*[@id="citationindex2"]/div[1]/div[2]/div[1]/ul[1]/li[1]/a/div[1]
+FULL XPATH: /html/body/div[1]/div/div[5]/div[1]/div[2]/div[1]/ul[1]/li[1]/a/div[1]
+SELECTOR:   #citationindex2 > div.sciwrapper > div.scicontent.nano.has-scrollbar > div.nano-content > ul:nth-child(3) > li:nth-child(1) > a > div.book
+
+Problem is that sometimes these elements seem to fall under citationindex rather than citationindex2 (not sure why)
+However, it appears that (at least for the root page) the class 'sciwrapper' is a reliable selector of the right-pane
+
+Recap of element names and attributes at each "level" of citation index:
+
+- LEVEL 1: VOLUMES
+<div class="sciwrapper">
+    <div class="scicontent nano has-scrollbar">
+        <div class="nano-content" tabindex="0">
+            <div class="volumetitle">
+            <ul class="volumecontents">
+                <li class="grid">
+                    <a href="javascript:void(0);" onclick="getFilter('101')">
+                        <div class="book">Genesis</div>
+                        <div class="citationcount">[609]</div>
+                        
+- LEVEL 2: CHAPTERS
+<div class="sciwrapper">
+    <div class="scicontent nano has-scrollbar">
+        <div class="nano-content" tabindex="0">
+            <b class="chaptertitle">
+            <ul class="chaptersblock">
+                <li>
+                    <a href="javascript:void(0);" onclick="getFilter('101', '1')">
+                        <div class="chap">1</div>
+                        <div class="citationcount">[87]</div>
+
+- LEVEL 3: VERSES
+<div class="sciwrapper">
+    <div class="scicontent nano has-scrollbar">
+        <div class="nano-content" tabindex="0">
+            <ul class="referencesblock">
+                <li>
+                    <a href="javascript:void(0);" onclick="getFilter('101', '1', '1', '')">
+                        <div class="reference">Gen. 1:1</div>
+                        <div class="citationcount">[3]</div>
+                        
+- LEVEL 4: TALKS
+<div class="sciwrapper">
+    <div class="scicontent nano has-scrollbar">
+        <div class="nano-content" tabindex="0">
+            <div class="volumetitle">
+            <ul class="referencesblock">
+                <li>
+                    <a href="javascript:void(0);" class="refcounter" onclick="getTalk('8226', '132593');">
+                        <div class="reference referencewatch referencelisten">2017-A:19, Henry B. Eyring</div>
+                        <div class="talktitle talktitlewatch talktitlelisten">Gethering the Family of God</div>
+
+
+
+
+
+
+
 - Talks are numbered with hexadecimal from 1 (April 1942) to 210b (April 2020)
 - Format is `https://scriptures.byu.edu/#:t<talknumber>`
 
