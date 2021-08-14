@@ -4,8 +4,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
-
-
 WebElement = webdriver.remote.webelement.WebElement
 
 
@@ -38,7 +36,7 @@ def main():
         # browser.get(old_url)
 
 
-def get_buttons_details_dict(button_elems : list) -> dict:
+def get_buttons_details_dict(button_elems: list) -> dict:
     d = {}
     for button_elem in button_elems:
         link_elem = extract_link_tag_from_button(button_elem)
@@ -47,6 +45,7 @@ def get_buttons_details_dict(button_elems : list) -> dict:
         d[title] = script
         print("get details for", title, script)
     return d
+
 
 def check_url_changed(new_url, old_url):
     return new_url != old_url
@@ -58,14 +57,14 @@ def check_that_page_has_changed(new_button_elements, old_button_elements):
 
     return extract_buttons_text(new_button_elements) == extract_buttons_text(old_button_elements)
 
-
-def find_button_elems_wait_wrapper(browser, old_button_elements):
-    new_button_elements = find_button_elems(browser)
-    if check_that_page_has_changed(new_button_elements, old_button_elements):
-        return new_button_elements
-    else:
-        time.sleep(3)
-        return find_button_elems(browser)
+#
+# def find_button_elems_wait_wrapper(browser, old_button_elements):
+#     new_button_elements = find_button_elems(browser)
+#     if check_that_page_has_changed(new_button_elements, old_button_elements):
+#         return new_button_elements
+#     else:
+#         time.sleep(3)
+#         return find_button_elems(browser)
 
 
 def find_button_elems(browser):
@@ -87,12 +86,12 @@ def extract_link_tag_from_button(button_elem: WebElement) -> WebElement:
 
 
 def extract_button_title_from_link(link_elem: WebElement) -> str:
-    raw_button_text = link_elem.text
-    lines_of_text = raw_button_text.count('\n') + 1
-    assert lines_of_text == 2, f"expected button text to have 2 lines but text is {raw_button_text}"
-    button_text_pieces = raw_button_text.split('\n')
-    title = button_text_pieces[0]
+    text_tags = link_elem.find_elements_by_tag_name('div')
+    list_without_citationcount = [x for x in text_tags if x.get_attribute('class') != 'citationcount']
+    assert len(list_without_citationcount) == 1, f'got more text tags than expected in {list_without_citationcount}'
+    title = list_without_citationcount[0].text
     return title
+
 
 
 def extract_script_from_link(link_tag: WebElement) -> str:
