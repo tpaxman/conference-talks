@@ -69,8 +69,10 @@ def find_button_elems_wait_wrapper(browser, old_button_elements):
 
 
 def find_button_elems(browser):
-    button_elements = (browser
-                       .find_element_by_class_name('sciwrapper')
+    sciwrapper = WebDriverWait(browser, 10).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "sciwrapper"))
+    )
+    button_elements = (sciwrapper
                        .find_element_by_class_name('scicontent')
                        .find_element_by_class_name('nano-content')
                        .find_elements_by_tag_name('li'))
