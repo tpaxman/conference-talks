@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
+from bs4 import BeautifulSoup
 
 WebElement = webdriver.remote.webelement.WebElement
 
@@ -10,40 +10,37 @@ WebElement = webdriver.remote.webelement.WebElement
 def main():
     base_url = 'https://scriptures.byu.edu/#::fNYNY7267e413'
     browser = webdriver.Chrome()
-    browser.get(base_url)
-    root_button_elems = find_button_elems(browser)
-    for x in root_button_elems:
-        the_machine(browser, x)
+    the_machine(browser, base_url)
 
-def the_machine(browser, button_elem):
-    link_elem = extract_link_tag_from_button(button_elem)
-    script = extract_script_from_link(link_elem)
-    if 'getTalk' in script:
+def the_machine(browser, url):
+    browser.get(url)
+    button_elems = find_button_elems(browser)
+    link_elems = [extract_link_tag_from_button(x) for x in button_elems]
+    class_names = [get_element_attributes(x)['class'] for x in link_elems]
+
+    for button_elem in button_elems:
         link_elem = extract_link_tag_from_button(button_elem)
-        reference = extract_talk_reference(link_elem)
-        title = extract_talk_title(link_elem)
-        print('------', reference.replace('\n', '___'), title.replace('\n', '___'))
-    else:
-        browser.execute_script(script)
-        # this seems to be required to avoid "stale element" errors:
-        new_url = browser.current_url
-        browser.get(new_url)
-        new_button_elems = find_button_elems(browser)
-        for button_elem in new_button_elems:
-            print('go do ' + button_elem.text.replace('\n', '___'))
-            the_machine(browser, button_elem)
+        script = extract_script_from_link(link_elem)
+        if 'getTalk' in script:
+            link_elem = extract_link_tag_from_button(button_elem)
+            reference = extract_talk_reference(link_elem)
+            title = extract_talk_title(link_elem)
+            print('------', reference.replace('\n', '___'), title.replace('\n', '___'))
+        else:
+            title = extract_button_title_from_link(link_elem)
+            print('execute: ' + script + ', ' + title)
+            browser.execute_script(script)
+            # this seems to be required to avoid "stale element" errors:
+            new_url = browser.current_url
+            the_machine(browser, new_url)
+
+
 
 def extract_talk_reference(link_elem: WebElement) -> str:
     return link_elem.find_element_by_class_name('reference').text
 
 def extract_talk_title(link_elem: WebElement) -> str:
     return link_elem.find_element_by_class_name('talktitle').text
-
-def check_that_page_has_changed(new_button_elements, old_button_elements):
-    def extract_buttons_text(button_elements):
-        return ''.join([x.text for x in button_elements])
-
-    return extract_buttons_text(new_button_elements) == extract_buttons_text(old_button_elements)
 
 
 def find_button_elems(browser):
@@ -67,7 +64,7 @@ def extract_link_tag_from_button(button_elem: WebElement) -> WebElement:
 def extract_button_title_from_link(link_elem: WebElement) -> str:
     text_tags = link_elem.find_elements_by_tag_name('div')
     list_without_citationcount = [x for x in text_tags if x.get_attribute('class') != 'citationcount']
-    assert len(list_without_citationcount) == 1, f'got more text tags than expected in {list_without_citationcount}'
+    assert len(list_without_citationcount) == 1, f'got more text tags than expected in {[x.text for x in list_without_citationcount]}'
     title = list_without_citationcount[0].text
     return title
 
@@ -81,7 +78,7 @@ def extract_script_from_link(link_tag: WebElement) -> str:
 
 # GENERAL HELPERS
 
-def get_element_attributes(elem: webdriver.remote.webelement.WebElement) -> dict:
+def get_element_attributes(elem: WebElement) -> dict:
     list_of_dicts_of_attributes_properties = elem.get_property('attributes')
     attributes_dict = {x['nodeName']: x['nodeValue'] for x in list_of_dicts_of_attributes_properties}
     return attributes_dict
