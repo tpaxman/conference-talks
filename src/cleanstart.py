@@ -17,7 +17,12 @@ def main():
 
 def the_machine(browser, url, parent_details, file_to_write):
     browser.get(url)
-    button_elems = find_button_elems(browser)
+    try:
+        button_elems = find_button_elems(browser)
+    except:
+        # this handles cases like "headnote" buttons which open nothing
+        print(f'skipping {parent_details}')
+        return
     for button_elem in button_elems:
         link_elem = extract_link_tag_from_button(button_elem)
         script = extract_script_from_link(link_elem)
@@ -30,6 +35,7 @@ def the_machine(browser, url, parent_details, file_to_write):
         else:
             title = extract_button_title_from_link(link_elem)
             if '(JST)' in title:
+                # JST button links also appear to do nothing
                 print(f'skipping {title}')
                 continue
             else:
