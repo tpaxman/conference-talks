@@ -10,10 +10,12 @@ WebElement = webdriver.remote.webelement.WebElement
 def main():
     base_url = 'https://scriptures.byu.edu/#::fNYNY7267e413'
     browser = webdriver.Chrome()
-    the_machine(browser, base_url)
+    parent_details = ''
+    with open('talks_output.txt', 'w') as f:
+        the_machine(browser, base_url, parent_details, f)
 
 
-def the_machine(browser, url):
+def the_machine(browser, url, parent_details, file_to_write):
     browser.get(url)
     button_elems = find_button_elems(browser)
     for button_elem in button_elems:
@@ -23,14 +25,19 @@ def the_machine(browser, url):
             link_elem = extract_link_tag_from_button(button_elem)
             reference = extract_talk_reference(link_elem)
             title = extract_talk_title(link_elem)
+            file_to_write.write(parent_details + ' ; ' + url + ' ; ' + reference + ' ; ' + title + '\n')
             print('------', reference.replace('\n', '___'), title.replace('\n', '___'))
         else:
             title = extract_button_title_from_link(link_elem)
-            print('execute: ' + script + ', ' + title)
-            browser.execute_script(script)
-            # this seems to be required to avoid "stale element" errors:
-            new_url = browser.current_url
-            the_machine(browser, new_url)
+            if '(JST)' in title:
+                print(f'skipping {title}')
+                continue
+            else:
+                print('execute: ' + script + ', ' + title)
+                browser.execute_script(script)
+                # this seems to be required to avoid "stale element" errors:
+                new_url = browser.current_url
+                the_machine(browser, new_url, parent_details + ' ; ' + title, file_to_write)
 
 
 def extract_talk_reference(link_elem: BeautifulSoup) -> str:
