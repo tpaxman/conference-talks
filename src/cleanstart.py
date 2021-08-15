@@ -11,52 +11,39 @@ def main():
     base_url = 'https://scriptures.byu.edu/#::fNYNY7267e413'
     browser = webdriver.Chrome()
     browser.get(base_url)
-
-    # wait = WebDriverWait(browser, 10)
-    # element = wait.until(EC.element_to_be_clickable((By.TAG_NAME, 'a')))
     root_button_elems = find_button_elems(browser)
-    d = get_buttons_details_dict(root_button_elems)
+    for x in root_button_elems:
+        the_machine(browser, x)
 
-    dd = {}
-    for title, script in d.items():
+def the_machine(browser, button_elem):
+    link_elem = extract_link_tag_from_button(button_elem)
+    script = extract_script_from_link(link_elem)
+    if 'getTalk' in script:
+        link_elem = extract_link_tag_from_button(button_elem)
+        reference = extract_talk_reference(link_elem)
+        title = extract_talk_title(link_elem)
+        print('------', reference.replace('\n', '___'), title.replace('\n', '___'))
+    else:
         browser.execute_script(script)
+        # this seems to be required to avoid "stale element" errors:
         new_url = browser.current_url
         browser.get(new_url)
-        print(f'execute {script} ({title})')
         new_button_elems = find_button_elems(browser)
-        d2 = get_buttons_details_dict(new_button_elems)
-        dd[title] = d2
+        for button_elem in new_button_elems:
+            print('go do ' + button_elem.text.replace('\n', '___'))
+            the_machine(browser, button_elem)
 
+def extract_talk_reference(link_elem: WebElement) -> str:
+    return link_elem.find_element_by_class_name('reference').text
 
-def get_buttons_details_dict(button_elems: list) -> dict:
-    d = {}
-    for button_elem in button_elems:
-        link_elem = extract_link_tag_from_button(button_elem)
-        script = extract_script_from_link(link_elem)
-        title = extract_button_title_from_link(link_elem)
-        d[title] = script
-        print("get details for", title, script)
-    return d
-
-
-def check_url_changed(new_url, old_url):
-    return new_url != old_url
-
+def extract_talk_title(link_elem: WebElement) -> str:
+    return link_elem.find_element_by_class_name('talktitle').text
 
 def check_that_page_has_changed(new_button_elements, old_button_elements):
     def extract_buttons_text(button_elements):
         return ''.join([x.text for x in button_elements])
 
     return extract_buttons_text(new_button_elements) == extract_buttons_text(old_button_elements)
-
-#
-# def find_button_elems_wait_wrapper(browser, old_button_elements):
-#     new_button_elements = find_button_elems(browser)
-#     if check_that_page_has_changed(new_button_elements, old_button_elements):
-#         return new_button_elements
-#     else:
-#         time.sleep(3)
-#         return find_button_elems(browser)
 
 
 def find_button_elems(browser):
@@ -83,7 +70,6 @@ def extract_button_title_from_link(link_elem: WebElement) -> str:
     assert len(list_without_citationcount) == 1, f'got more text tags than expected in {list_without_citationcount}'
     title = list_without_citationcount[0].text
     return title
-
 
 
 def extract_script_from_link(link_tag: WebElement) -> str:
