@@ -12,12 +12,10 @@ def main():
     browser = webdriver.Chrome()
     the_machine(browser, base_url)
 
+
 def the_machine(browser, url):
     browser.get(url)
     button_elems = find_button_elems(browser)
-    link_elems = [extract_link_tag_from_button(x) for x in button_elems]
-    class_names = [get_element_attributes(x)['class'] for x in link_elems]
-
     for button_elem in button_elems:
         link_elem = extract_link_tag_from_button(button_elem)
         script = extract_script_from_link(link_elem)
@@ -35,53 +33,42 @@ def the_machine(browser, url):
             the_machine(browser, new_url)
 
 
+def extract_talk_reference(link_elem: BeautifulSoup) -> str:
+    return link_elem.find(class_='reference').text
 
-def extract_talk_reference(link_elem: WebElement) -> str:
-    return link_elem.find_element_by_class_name('reference').text
 
-def extract_talk_title(link_elem: WebElement) -> str:
-    return link_elem.find_element_by_class_name('talktitle').text
+def extract_talk_title(link_elem: BeautifulSoup) -> str:
+    return link_elem.find(class_='talktitle').text
 
 
 def find_button_elems(browser):
-    sciwrapper = WebDriverWait(browser, 10).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "sciwrapper"))
-    )
-    button_elements = (sciwrapper
-                       .find_element_by_class_name('scicontent')
-                       .find_element_by_class_name('nano-content')
-                       .find_elements_by_tag_name('li'))
+    sciwrapper = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "sciwrapper")))
+    soup = BeautifulSoup(sciwrapper.get_attribute('outerHTML'), 'html.parser')
+    button_elements = soup.find(class_='scicontent').find(class_='nano-content').find_all('li')
     return button_elements
 
 
-def extract_link_tag_from_button(button_elem: WebElement) -> WebElement:
-    assert button_elem.tag_name == 'li', 'button_elem must be an "li" tag'
-    link_tag = button_elem.find_element_by_tag_name('a')
+def extract_link_tag_from_button(button_elem: BeautifulSoup) -> BeautifulSoup:
+    assert button_elem.name == 'li', 'button_elem must be an "li" tag'
+    link_tag = button_elem.find('a')
     assert link_tag, f"no link was found in {button_elem}"
     return link_tag
 
 
-def extract_button_title_from_link(link_elem: WebElement) -> str:
-    text_tags = link_elem.find_elements_by_tag_name('div')
-    list_without_citationcount = [x for x in text_tags if x.get_attribute('class') != 'citationcount']
-    assert len(list_without_citationcount) == 1, f'got more text tags than expected in {[x.text for x in list_without_citationcount]}'
+def extract_button_title_from_link(link_elem: BeautifulSoup) -> str:
+    text_tags = link_elem.find_all('div')
+    list_without_citationcount = [x for x in text_tags if ('citationcount' not in x.get('class'))]
+    assert len(
+        list_without_citationcount) == 1, f'got more text tags than expected in {[x.text for x in list_without_citationcount]}'
     title = list_without_citationcount[0].text
     return title
 
 
-def extract_script_from_link(link_tag: WebElement) -> str:
-    assert link_tag.tag_name == 'a', "link_tag must be an 'a' element"
-    assert 'onclick' in get_element_attributes(link_tag), "link_tag must have 'onclick' attribute"
-    script = link_tag.get_attribute('onclick')
+def extract_script_from_link(link_tag: BeautifulSoup) -> str:
+    assert link_tag.name == 'a', "link_tag must be an 'a' element"
+    assert 'onclick' in link_tag.attrs, "link_tag must have 'onclick' attribute"
+    script = link_tag.get('onclick')
     return script
-
-
-# GENERAL HELPERS
-
-def get_element_attributes(elem: WebElement) -> dict:
-    list_of_dicts_of_attributes_properties = elem.get_property('attributes')
-    attributes_dict = {x['nodeName']: x['nodeValue'] for x in list_of_dicts_of_attributes_properties}
-    return attributes_dict
 
 
 # MAIN SCRIPT
