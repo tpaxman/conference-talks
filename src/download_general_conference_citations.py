@@ -1,3 +1,10 @@
+"""
+DOWNLOAD GENERAL CONFERENCE CITATIONS
+
+This scrapes scriptures.byu.edu to get a text file containing every general conference talk
+referencing each scripture.
+"""
+import sys
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -6,12 +13,21 @@ from bs4 import BeautifulSoup
 
 WebElement = webdriver.remote.webelement.WebElement
 
+URL_WITH_FULL_CITATIONS_1930_TO_2020 = 'https://scriptures.byu.edu/#::fNYNY7267e413'
+DEFAULT_FILENAME = 'general_conference_citations.txt'
 
 def main():
-    base_url = 'https://scriptures.byu.edu/#::fNYNY7267e413'
+    # parse command line arguments
+    num_commandline_args = len(sys.argv) - 1
+    if num_commandline_args == 1:
+        outputfile = sys.argv[1]
+    else:
+        print(f"No file destination was supplied as a command line argument; defaulting to {DEFAULT_FILENAME}")
+        outputfile = DEFAULT_FILENAME
+    base_url = URL_WITH_FULL_CITATIONS_1930_TO_2020
     browser = webdriver.Chrome()
     parent_details = ''
-    with open('talks_output.txt', 'w') as f:
+    with open(outputfile, 'w') as f:
         the_machine(browser, base_url, parent_details, f)
 
 
@@ -21,7 +37,7 @@ def the_machine(browser, url, parent_details, file_to_write):
         button_elems = find_button_elems(browser)
     except:
         # this handles cases like "headnote" buttons which open nothing
-        print(f'skipping {parent_details}')
+        print(f'----- skipping {parent_details} -----')
         return
     for button_elem in button_elems:
         link_elem = extract_link_tag_from_button(button_elem)
@@ -30,16 +46,17 @@ def the_machine(browser, url, parent_details, file_to_write):
             link_elem = extract_link_tag_from_button(button_elem)
             reference = extract_talk_reference(link_elem)
             title = extract_talk_title(link_elem)
-            file_to_write.write(parent_details + ' ; ' + url + ' ; ' + reference + ' ; ' + title + '\n')
-            print('------', reference.replace('\n', '___'), title.replace('\n', '___'))
+            details_to_print = [parent_details, url, reference, title]
+            text_to_print = ' ; '.join([x for x in details_to_print if x  != ''])
+            file_to_write.write(text_to_print + '\n')
+            print(text_to_print)
         else:
             title = extract_button_title_from_link(link_elem)
             if '(JST)' in title:
                 # JST button links also appear to do nothing
-                print(f'skipping {title}')
+                print(f'----- skipping {title} -----')
                 continue
             else:
-                print('execute: ' + script + ', ' + title)
                 browser.execute_script(script)
                 # this seems to be required to avoid "stale element" errors:
                 new_url = browser.current_url
