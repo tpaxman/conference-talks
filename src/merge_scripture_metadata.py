@@ -5,26 +5,13 @@ import pandas as pd
 def main():
     (citations_table_filepath, scriptures_table_filepath, outputfilename) = sys.argv[1:]
     citations_table = pd.read_csv(citations_table_filepath)
-    books_table = import_books_metadata(scriptures_table_filepath)
-    full_table = add_books_details_to_citations(citations_table, books_table)
-    columns_order = ['volume_id', 'book_id', 'volume_title', 'book_title', 'chapter', 'verse', 'speaker', 'year', 'month', 'talk_title']
-    final_table = full_table[columns_order]
-    final_table.to_csv(outputfilename, index=False)
-
-
-def import_books_metadata(scriptures_table_filepath: str) -> pd.DataFrame:
-    df = pd.read_csv(scriptures_table_filepath)
-    df = df[['book_short_title', 'book_id', 'book_title', 'volume_id', 'volume_title']]
-    df = df.drop_duplicates()
-    df = df.reset_index(drop=True)
-    return df
-
-
-def add_books_details_to_citations(citations_table: pd.DataFrame, books_table: pd.DataFrame) -> pd.DataFrame:
-    citations_table['book_short_title'] = citations_table.book_name.replace(
-        {"JS—H": "JS-H", "JS—M": "JS-M", "Song": "Song."})
-    full_table = citations_table.merge(books_table)
-    return full_table
+    scriptures_table = pd.read_csv(scriptures_table_filepath)
+    final_view = citations_table.merge(scriptures_table, how='left',
+                                       on=['book_short_title', 'chapter_number', 'verse_number'])
+    final_view = final_view[['verse_title', 'book_title', 'volume_title', 'chapter_number', 'verse_number',
+                             'scripture_text', 'talk_speaker', 'talk_year', 'talk_session', 'talk_title',
+                             'volume_id', 'book_id', 'chapter_id', 'verse_id']]
+    final_view.to_csv(outputfilename, index=False)
 
 
 if __name__ == '__main__':
