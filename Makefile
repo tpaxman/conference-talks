@@ -11,3 +11,6 @@ data/general-conference-talk-references.csv : src/parse_text.py data/general-con
 
 data/citations-clean.csv : src/merge_scripture_metadata.py data/general-conference-talk-references.csv data/lds-scriptures.csv
 	python $^ $@
+
+data/presidents.csv : src/import_presidents_data.py
+	python $^ $@
