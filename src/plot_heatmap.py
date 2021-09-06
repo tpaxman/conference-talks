@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-data = pd.read_csv('data/citations-clean.csv')
-scrips = pd.read_csv('data/lds-scriptures.csv')
+data = pd.read_csv('data/citations-clean.csv').assign(chapter_title=lambda x: x.book_title + ' ' + x.chapter_number.astype(str))
+scrips = pd.read_csv('data/lds-scriptures.csv').assign(chapter_title=lambda x: x.book_title + ' ' + x.chapter_number.astype(str))
 
 
 def get_num_refs_for_speaker(data, speaker, column_to_count):
@@ -30,7 +30,6 @@ num_refs = get_num_refs_for_speaker(data=data, speaker='David A. Bednar', column
 plot_data = merge_num_refs_to_scrips(num_refs=num_refs, scrips=scrips, column_to_merge='verse_id',
                                      column_to_display='verse_title', column_to_plot='verse_id_count')
 
-scrips['chapter_title'] = scrips.book_title + ' ' + scrips.chapter_number.astype(str)
 
 def make_a_plot(data, scrips, speaker, col_to_count, col_to_display, cmap):
     fig = plt.figure()
